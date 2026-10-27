@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบคำนวณเงินออมกองทุนสำรองเลี้ยงชีพ (PVD)</title>
+    <script src="https://tailwindcss.com"></script>
+    <link href="https://googleapis.com" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-10 px-4">
+    <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="bg-gradient-to-r class bg-teal-700 p-6 text-white text-center">
+            <h1 class="text-2xl md:text-3xl font-semibold">เครื่องคำนวณเงินออม PVD เพื่อการเกษียณ</h1>
+            <p class="text-teal-100 mt-2 text-sm md:text-base">วางแผนและจำลองการเติบโตของเงินกองทุนสำรองเลี้ยงชีพของคุณ</p>
+        </div>
+
+        <div class="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- ฟอร์มกรอกข้อมูล -->
+            <div class="space-y-5">
+                <h2 class="text-xl font-medium text-gray-800 border-b pb-2 border-teal-500">ตั้งค่าข้อมูลทางการเงิน</h2>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">เงินต้นปัจจุบัน (บาท)</label>
+                    <input type="number" id="principal" value="1200000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">เงินสะสมเพิ่มต่อปี (บาท)</label>
+                    <input type="number" id="contribution" value="180000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none transition">
+                    <p class="text-xs text-gray-500 mt-1">* คิดเป็นเงินสะสมรายเดือนประมาณ <span id="monthly-hint">15,000</span> บาท</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ระยะเวลาสะสมก่อนเกษียณ (ปี)</label>
+                    <input type="number" id="duration" value="20" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none transition">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">ผลตอบแทนคาดหวังต่อปี (%)</label>
+                    <input type="number" id="return" value="5" step="0.1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:outline-none transition">
+                </div>
+
+                <button onclick="calculateRetirement()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 rounded-lg transition transform active:scale-95 shadow-md">
+                    คำนวณผลลัพธ์ใหม่
+                </button>
+            </div>
+
+            <!-- แสดงผลลัพธ์ -->
+            <div class="bg-teal-50/50 rounded-xl p-6 border border-teal-100 flex flex-col justify-between space-y-6">
+                <div>
+                    <h2 class="text-xl font-medium text-gray-800 border-b pb-2 border-teal-500 mb-4">สรุปยอดเงินเมื่อเกษียณ</h2>
+                    
+                    <div class="mb-6">
+                        <span class="text-sm text-gray-500 block">เงินรวมสุทธิที่จะได้รับ</span>
+                        <span id="result-total" class="text-3xl md:text-4xl font-bold text-teal-700">9,420,673 บาท</span>
+                    </div>
+
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                            <span class="text-gray-600">เงินก้อนเริ่มต้น:</span>
+                            <span id="result-principal" class="font-semibold text-gray-800">1,200,000 บาท</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                            <span class="text-gray-600">เงินที่จะส่งเพิ่มทั้งหมด:</span>
+                            <span id="result-contributions" class="font-semibold text-gray-800">3,600,000 บาท</span>
+                        </div>
+                        <div class="flex justify-between items-center bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                            <span class="text-gray-600">ผลตอบแทน/ดอกเบี้ยสะสม:</span>
+                            <span id="result-interest" class="font-semibold text-emerald-600">+4,620,673 บาท</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-teal-200">
+                    <h4 class="font-medium text-gray-800 mb-1 text-sm">💡 บทวิเคราะห์ความปลอดภัยทางการเงิน</h4>
+                    <p id="analysis-text" class="text-xs text-gray-600 leading-relaxed">
+                        ยอดเงินนี้ผ่านเกณฑ์เงินออมขั้นต่ำพึงมีสำหรับการเกษียณยุคปัจจุบัน (5 ล้านบาท) มีสภาพคล่องและความปลอดภัยสูง ควรเลือกแผนกองทุนที่มีหุ้นผสมอยู่บ้างเพื่อให้ผลตอบแทนชนะเงินเฟ้อ
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function formatNumber(num) {
+            return new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(num) + ' บาท';
+        }
+
+        function calculateRetirement() {
+            // ดึงค่าจาก Inputs
+            const P = parseFloat(document.getElementById('principal').value) || 0;
+            const annualContribution = parseFloat(document.getElementById('contribution').value) || 0;
+            const t = parseFloat(document.getElementById('duration').value) || 0;
+            const rAnnual = (parseFloat(document.getElementById('return').value) || 0) / 100;
+
+            // คำนวณเป็นรายเดือนเพื่อให้สอดคล้องกับกองทุนสำรองเลี้ยงชีพจริง
+            const PMT = annualContribution / 12;
+            const rMonthly = rAnnual / 12;
+            const nMonths = t * 12;
+
+            // อัปเดตตัวช่วยบอกยอดเงินเดือนข้างใต้ช่องกรอกข้อมูล
+            document.getElementById('monthly-hint').innerText = new Intl.NumberFormat('th-TH', { maximumFractionDigits: 0 }).format(PMT);
+
+            let totalFutureValue = 0;
+            
+            if (rMonthly > 0) {
+                // สูตรมูลค่าในอนาคตของเงินก้อนเริ่มต้น (Future Value of Lump Sum)
+                const fvPrincipal = P * Math.pow(1 + rMonthly, nMonths);
+                
+                // สูตรมูลค่าในอนาคตของเงินออมงวดเท่าๆ กันรายเดือน (Future Value of Annuity)
+                const fvAnnuity = PMT * ((Math.pow(1 + rMonthly, nMonths) - 1) / rMonthly);
+                
+                totalFutureValue = fvPrincipal + fvAnnuity;
+            } else {
+                // กรณีผลตอบแทน 0%
+                totalFutureValue = P + (PMT * nMonths);
+            }
+
+            const totalContributions = PMT * nMonths;
+            const totalInterest = totalFutureValue - P - totalContributions;
+
+            // อัปเดตการแสดงผลบนหน้าจอ
+            document.getElementById('result-total').innerText = formatNumber(totalFutureValue);
+            document.getElementById('result-principal').innerText = formatNumber(P);
+            document.getElementById('result-contributions').innerText = formatNumber(totalContributions);
+            document.getElementById('result-interest').innerText = '+' + formatNumber(totalInterest);
+
+            // วิเคราะห์ผลลัพธ์แบบ Dynamic
+            let analysis = '';
+            if (totalFutureValue >= 5000000) {
+                analysis = `ยอดเงินรวม ${formatNumber(totalFutureValue)} ของคุณผ่านเกณฑ์เงินออมขั้นต่ำสำหรับเกษียณปัจจุบัน (5 ล้านบาท) มีเสถียรภาพและความมั่นคงในระดับที่ดีมาก แนะนำให้รักษาวินัยการออมและทบทวนแผนลงทุนปีละครั้ง`;
+            } else if (totalFutureValue >= 3000000) {
+                analysis = `คุณมีเงินสะสมระดับปานกลาง แต่ยังต่ำกว่าเกณฑ์ความปลอดภัยขั้นต่ำ 5 ล้านบาท เล็กน้อย แนะนำให้ปรับเพิ่มอัตราการออม หรือขยายอายุเกษียณออกไปอีกเล็กน้อยเพื่อความมั่นคง`;
+            } else {
+                analysis = `เงินเก็บยังค่อนข้างตึงตัวสำหรับการใช้ชีวิตในระยะยาวหลังเกษียณ แนะนำให้พิจารณาปรับแผนพอร์ตการลงทุนให้มีสัดส่วนสินทรัพย์เสี่ยง (เช่น หุ้น) เพิ่มขึ้นเพื่อขยับผลตอบแทนต่อปีให้สูงขึ้น`;
+            }
+            document.getElementById('analysis-text').innerText = analysis;
+        }
+
+        // รันฟังก์ชันคำนวณครั้งแรกตอนโหลดหน้าเว็บ
+        window.onload = calculateRetirement;
+    </script>
+</body>
+</html>
